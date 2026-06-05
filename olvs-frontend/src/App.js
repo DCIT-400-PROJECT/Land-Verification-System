@@ -1,0 +1,65 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Layout from './components/Layout';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import VerifyLand from './pages/VerifyLand';
+import LandRecords from './pages/LandRecords';
+import CreateRecord from './pages/CreateRecord';
+import Transfers from './pages/Transfers';
+import AuditLog from './pages/AuditLog';
+
+// Protected route — must be logged in
+function Protected({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
+    <div className="spin" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%' }} />
+  </div>;
+  return user ? children : <Navigate to="/login" replace />;
+}
+
+// Admin-only route
+function AdminOnly({ children }) {
+  const { user, isAdmin, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+function AppRoutes() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+        <Route path="/verify" element={<Protected><VerifyLand /></Protected>} />
+
+        {/* Admin routes */}
+        <Route path="/admin/records" element={<AdminOnly><LandRecords /></AdminOnly>} />
+        <Route path="/admin/records/create" element={<AdminOnly><CreateRecord /></AdminOnly>} />
+        <Route path="/admin/transfers" element={<AdminOnly><Transfers /></AdminOnly>} />
+        <Route path="/admin/audit" element={<AdminOnly><AuditLog /></AdminOnly>} />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Layout>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
