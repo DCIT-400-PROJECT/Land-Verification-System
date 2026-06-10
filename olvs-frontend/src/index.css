@@ -1,45 +1,61 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* ── Default (dark) theme variables — overridden by ThemeContext ── */
 :root {
-  --gold: #C9A84C;
-  --gold-light: #E8C97A;
-  --gold-dim: #8A6F2E;
-  --dark: #0A0C0F;
-  --dark-2: #111318;
-  --dark-3: #181C22;
-  --dark-4: #1E232B;
-  --dark-5: #252B35;
-  --border: rgba(201,168,76,0.15);
-  --border-hover: rgba(201,168,76,0.35);
-  --text-primary: #F0EDE8;
+  --gold:           #C9A84C;
+  --gold-light:     #E8C97A;
+  --gold-dim:       #8A6F2E;
+  --dark:           #0A0C0F;
+  --dark-2:         #111318;
+  --dark-3:         #181C22;
+  --dark-4:         #1E232B;
+  --dark-5:         #252B35;
+  --border:         rgba(201,168,76,0.15);
+  --border-hover:   rgba(201,168,76,0.35);
+  --text-primary:   #F0EDE8;
   --text-secondary: #8B8F96;
-  --text-muted: #555A63;
-  --success: #2ECC71;
-  --danger: #E74C3C;
-  --warning: #F39C12;
-  --info: #3498DB;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
-  --glow: 0 0 40px rgba(201,168,76,0.08);
+  --text-muted:     #555A63;
+  --success:        #2ECC71;
+  --danger:         #E74C3C;
+  --warning:        #F39C12;
+  --info:           #3498DB;
+  --bg-body:        #0A0C0F;
+  --nav-bg:         rgba(10,12,15,0.95);
+  --radius:         10px;
+  --radius-lg:      16px;
+  --shadow:         0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* ── Light theme overrides ── */
+[data-theme="light"] {
+  --shadow: 0 4px 24px rgba(0,0,0,0.1);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: 'Sora', sans-serif;
-  background: var(--dark);
+  background: var(--bg-body);
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* Smooth transitions on theme switch */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+/* But NOT on animations — override the transition for those */
+.spin, .fade-in, .slide-up {
+  transition: none !important;
 }
 
 code, pre { font-family: 'JetBrains Mono', monospace; }
-
 a { color: var(--gold); text-decoration: none; }
 a:hover { color: var(--gold-light); }
-
 button { cursor: pointer; font-family: 'Sora', sans-serif; }
 input, textarea, select { font-family: 'Sora', sans-serif; }
 
@@ -69,9 +85,4 @@ input, textarea, select { font-family: 'Sora', sans-serif; }
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-@keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.3); }
-  50%       { box-shadow: 0 0 0 8px rgba(201,168,76,0); }
 }
