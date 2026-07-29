@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import VerifyLand from './pages/VerifyLand';
 import LandRecords from './pages/LandRecords';
+import LandRecordDetail from './pages/LandRecordDetail';
 import CreateRecord from './pages/CreateRecord';
 import Transfers from './pages/Transfers';
 import AuditLog from './pages/AuditLog';
@@ -36,16 +37,20 @@ function AppRoutes() {
   return (
     <Layout>
       <Routes>
-        <Route path="/"                    element={<Landing />} />
-        <Route path="/login"               element={<Login />} />
-        <Route path="/register"            element={<Register />} />
-        <Route path="/dashboard"           element={<Protected><Dashboard /></Protected>} />
-        <Route path="/verify"              element={<Protected><VerifyLand /></Protected>} />
-        <Route path="/admin/records"       element={<AdminOnly><LandRecords /></AdminOnly>} />
-        <Route path="/admin/records/create"element={<AdminOnly><CreateRecord /></AdminOnly>} />
-        <Route path="/admin/transfers"     element={<AdminOnly><Transfers /></AdminOnly>} />
-        <Route path="/admin/audit"         element={<AdminOnly><AuditLog /></AdminOnly>} />
-        <Route path="*"                    element={<Navigate to="/" replace />} />
+        <Route path="/"                     element={<Landing />} />
+        <Route path="/login"                element={<Login />} />
+        <Route path="/register"             element={<Register />} />
+        <Route path="/dashboard"            element={<Protected><Dashboard /></Protected>} />
+        <Route path="/verify"               element={<Protected><VerifyLand /></Protected>} />
+
+        {/* Admin routes: static segments defined before the dynamic :id segment */}
+        <Route path="/admin/records"        element={<AdminOnly><LandRecords /></AdminOnly>} />
+        <Route path="/admin/records/create" element={<AdminOnly><CreateRecord /></AdminOnly>} />
+        <Route path="/admin/records/:id"    element={<AdminOnly><LandRecordDetail /></AdminOnly>} />
+        <Route path="/admin/transfers"      element={<AdminOnly><Transfers /></AdminOnly>} />
+        <Route path="/admin/audit"          element={<AdminOnly><AuditLog /></AdminOnly>} />
+
+        <Route path="*"                     element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
   );
