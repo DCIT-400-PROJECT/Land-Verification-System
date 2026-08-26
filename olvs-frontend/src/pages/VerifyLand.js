@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Alert, Badge, getStatusBadge, PageTitle } from '../components/UI';
 
 // ── Dummy land records matching Ghana Land Commission data fields ──────────────
@@ -177,7 +178,16 @@ export default function VerifyLand() {
   const [history, setHistory]         = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [source, setSource]           = useState(''); // 'api' | 'demo'
+const [searchParams] = useSearchParams();
 
+useEffect(() => {
+  const titleFromUrl = searchParams.get('title');
+  if (titleFromUrl) {
+    setTitleNumber(titleFromUrl);
+    // Trigger verification automatically
+    verify({ preventDefault: () => {} });
+  }
+}, []);
   const verify = async (e) => {
     e.preventDefault();
     const tn = titleNumber.trim().toUpperCase();
