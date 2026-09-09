@@ -28,11 +28,14 @@ function Protected({ children }) {
 function AdminOnly({ children }) {
   const { user, isAdmin, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/login" replace />;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
+// IMPORTANT: <Layout> wraps <Routes> exactly ONCE, here and nowhere else.
+// Individual page components (Landing, Login, Dashboard, etc.) must NEVER
+// import or render <Layout> themselves, or the navbar will render twice.
 function AppRoutes() {
   return (
     <Layout>
@@ -42,14 +45,11 @@ function AppRoutes() {
         <Route path="/register"             element={<Register />} />
         <Route path="/dashboard"            element={<Protected><Dashboard /></Protected>} />
         <Route path="/verify"               element={<Protected><VerifyLand /></Protected>} />
-
-        {/* Admin routes: static segments defined before the dynamic :id segment */}
         <Route path="/admin/records"        element={<AdminOnly><LandRecords /></AdminOnly>} />
         <Route path="/admin/records/create" element={<AdminOnly><CreateRecord /></AdminOnly>} />
         <Route path="/admin/records/:id"    element={<AdminOnly><LandRecordDetail /></AdminOnly>} />
         <Route path="/admin/transfers"      element={<AdminOnly><Transfers /></AdminOnly>} />
         <Route path="/admin/audit"          element={<AdminOnly><AuditLog /></AdminOnly>} />
-
         <Route path="*"                     element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
