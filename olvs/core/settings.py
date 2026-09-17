@@ -5,6 +5,8 @@ Django Settings
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
+from decouple import config, Csv
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -61,7 +63,10 @@ DATABASES = {
         "PASSWORD": config("DB_PASSWORD"),
         "HOST": config("DB_HOST", default="localhost"),
         "PORT": config("DB_PORT", default="5432"),
-        "OPTIONS": {"connect_timeout": 10},
+        "OPTIONS": {
+            "connect_timeout": 10,
+            "sslmode": "require",
+        },
     }
 }
 
@@ -148,5 +153,6 @@ if not DEBUG:
     X_FRAME_OPTIONS = "DENY"
 FRONTEND_BASE_URL = config("FRONTEND_BASE_URL", default="http://localhost:3000")
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())  # add your Vercel domain here
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv()) # add your Vercel domain here
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())  
 DEBUG = config("DEBUG", default=False, cast=bool)     # False in production
