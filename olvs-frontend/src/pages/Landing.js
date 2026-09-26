@@ -74,13 +74,20 @@ export default function Landing() {
           </div>
 
           <h1 className="hero-rise" style={{
-            fontSize: 'clamp(36px, 6vw, 60px)', fontWeight: 700, lineHeight: 1.1,
-            color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: 22,
-            animationDelay: '0.18s'
-          }}>
-            Every parcel, verified.<br />
-            <span style={{ color: 'var(--gold)' }}>Every transfer, permanent.</span>
-          </h1>
+          fontSize: 'clamp(36px, 6vw, 60px)', fontWeight: 700, lineHeight: 1.1,
+          color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: 14,
+          animationDelay: '0.18s'
+        }}>
+          Verify Land Ownership<br />
+          <span style={{ color: 'var(--gold)' }}>With Confidence</span>
+        </h1>
+
+        <p className="hero-rise" style={{
+          fontSize: 16, color: 'var(--gold-light)', fontWeight: 600, marginBottom: 22,
+          letterSpacing: '0.01em', animationDelay: '0.25s'
+        }}>
+          No parcel unchecked. No transfer erased.
+        </p>
 
           <p className="hero-rise" style={{
             fontSize: 16, color: 'var(--text-secondary)', maxWidth: 480,
