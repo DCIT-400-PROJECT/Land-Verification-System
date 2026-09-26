@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Alert, Badge, getStatusBadge, PageTitle } from '../components/UI';
+import VerifyExplainer from '../components/VerifyExplainer';
 
 // ── Dummy land records matching Ghana Land Commission data fields ──────────────
 const DUMMY_RECORDS = {
@@ -238,7 +239,7 @@ useEffect(() => {
         title="Land Title Verification"
         subtitle="Enter a Ghana Lands Commission title number to verify ownership, documents, and blockchain integrity"
       />
-
+      <VerifyExplainer />
       {/* Search bar */}
       <Card style={{ marginBottom: 24 }}>
         <form onSubmit={verify} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>

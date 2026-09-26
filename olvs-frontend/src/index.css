@@ -43,12 +43,10 @@ body {
   transition: background 0.25s ease, color 0.25s ease;
 }
 
-/* Smooth transitions on theme switch */
 *, *::before, *::after {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
 }
 
-/* But NOT on animations — override the transition for those */
 .spin, .fade-in, .slide-up {
   transition: none !important;
 }
@@ -85,4 +83,86 @@ input, textarea, select { font-family: 'Sora', sans-serif; }
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Landing page hero v2 — Ghana map watermark, scroll reveal, Sora only
+   ══════════════════════════════════════════════════════════════════════ */
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-rise {
+  opacity: 0;
+  animation: riseIn 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+@keyframes pinDrop {
+  0%   { opacity: 0; transform: translateY(-16px) scale(0.6); }
+  60%  { opacity: 1; transform: translateY(2px) scale(1.05); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pin-drop { animation: pinDrop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+@keyframes pulseRing {
+  0%   { transform: scale(0.3); opacity: 0.7; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.pulse-ring {
+  animation: pulseRing 1.8s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+@keyframes linkIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.link-in { opacity: 0; animation: linkIn 0.5s ease forwards; }
+
+@keyframes dashDraw {
+  from { stroke-dashoffset: 40; }
+  to   { stroke-dashoffset: 0; }
+}
+.dash-draw {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: dashDraw 0.5s ease forwards;
+}
+
+@keyframes mapDraw {
+  from { stroke-dashoffset: 1600; }
+  to   { stroke-dashoffset: 0; }
+}
+.dash-draw-map {
+  stroke-dasharray: 1600;
+  stroke-dashoffset: 1600;
+  animation: mapDraw 2.4s cubic-bezier(0.65,0,0.35,1) 0.3s forwards;
+}
+
+@keyframes beaconPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+.ghana-beacon {
+  opacity: 0;
+  animation: beaconPulse 2.4s ease-in-out 2.6s infinite;
+}
+@keyframes beaconRing {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+.ghana-beacon-ring {
+  transform-origin: 230px 392px;
+  opacity: 0;
+  animation: beaconRing 2.4s ease-out 2.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise, .pin-drop, .pulse-ring, .link-in, .dash-draw,
+  .dash-draw-map, .ghana-beacon, .ghana-beacon-ring {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+  }
 }

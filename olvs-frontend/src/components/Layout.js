@@ -2,16 +2,12 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
+import Logo from './Logo';
 import api from '../api/axios';
 
-const Logo = () => (
+const BrandMark = () => (
   <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-    <div style={{
-      width: 36, height: 36, borderRadius: 8,
-      background: 'linear-gradient(135deg, var(--gold-dim), var(--gold))',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 16, fontWeight: 700, color: '#0A0C0F', flexShrink: 0,
-    }}>L</div>
+    <Logo size={36} />
     <div>
       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>OLVS</div>
       <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', marginTop: -2 }}>LAND VERIFICATION</div>
@@ -57,7 +53,7 @@ export default function Layout({ children }) {
         padding: '0 24px', height: 64,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
       }}>
-        <Logo />
+        <BrandMark />
 
         {/* Nav links */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
