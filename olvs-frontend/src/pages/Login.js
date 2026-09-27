@@ -111,19 +111,7 @@ export default function Login() {
         Don't have an account? <Link to="/register" style={{ color: 'var(--gold)' }}>Register</Link>
       </p>
 
-      <div style={{
-        marginTop: 24, padding: 16,
-        background: 'var(--dark-3)', borderRadius: 10,
-        border: '1px solid var(--border)'
-      }}>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Demo credentials
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span>Admin: <code style={{ fontFamily: 'JetBrains Mono', color: 'var(--gold)' }}>admin@olvs.gh</code> / <code style={{ fontFamily: 'JetBrains Mono', color: 'var(--gold)' }}>Admin1234!</code></span>
-          <span>Citizen: <code style={{ fontFamily: 'JetBrains Mono', color: 'var(--text-primary)' }}>citizen@olvs.gh</code> / <code style={{ fontFamily: 'JetBrains Mono', color: 'var(--text-primary)' }}>Citizen1234!</code></span>
-        </div>
-      </div>
+      
     </div>
   );
 }
