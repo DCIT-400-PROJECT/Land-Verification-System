@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -19,6 +19,7 @@ export default function Layout({ children }) {
   const { user, logout, isAdmin } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -55,7 +56,6 @@ export default function Layout({ children }) {
       }}>
         <BrandMark />
 
-        {/* Nav links */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
           {navLinks.map(link => (
             <Link key={link.to} to={link.to} style={{
@@ -68,7 +68,6 @@ export default function Layout({ children }) {
           ))}
         </div>
 
-        {/* Right side: theme switcher + user */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <ThemeSwitcher />
 
@@ -79,7 +78,7 @@ export default function Layout({ children }) {
                 <span style={{ fontSize: 10, color: user.role === 'admin' ? 'var(--gold)' : 'var(--text-muted)',
                   textTransform: 'uppercase', letterSpacing: '0.06em' }}>{user.role}</span>
               </div>
-              <button onClick={handleLogout} style={{
+              <button onClick={() => setShowLogoutConfirm(true)} style={{
                 padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500,
                 background: 'transparent', border: '1px solid var(--border)',
                 color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.2s',
@@ -116,8 +115,51 @@ export default function Layout({ children }) {
         fontSize: 12, color: 'var(--text-muted)',
         background: 'var(--dark-2)',
       }}>
-        © 2025 Online Land Verification System · Derrick Edusei · Caleb Danquah · Paa Kwesi Ahenkorah
+        © 2026 Online Land Verification System · Derrick Edusei · Caleb Danquah · Paa Kwesi Ahenkorah
       </footer>
+
+      {/* ── Logout confirmation modal ── */}
+      {showLogoutConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999,
+        }}>
+          <div style={{
+            background: 'var(--dark-2)', border: '1px solid var(--border)',
+            borderRadius: 14, padding: '28px', maxWidth: 360, width: '90%',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+              Log out of OLVS?
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 22, lineHeight: 1.6 }}>
+              You'll need to sign in again to access your dashboard and verify land titles.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  background: 'transparent', border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowLogoutConfirm(false); handleLogout(); }}
+                style={{
+                  padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  background: 'var(--danger)', border: 'none',
+                  color: '#fff', cursor: 'pointer',
+                }}
+              >
+                Yes, log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
