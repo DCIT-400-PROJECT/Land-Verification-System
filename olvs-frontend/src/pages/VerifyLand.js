@@ -179,16 +179,25 @@ export default function VerifyLand() {
   const [history, setHistory]         = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [source, setSource]           = useState(''); // 'api' | 'demo'
-const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
-useEffect(() => {
-  const titleFromUrl = searchParams.get('title');
-  if (titleFromUrl) {
-    setTitleNumber(titleFromUrl);
-    // Trigger verification automatically
-    verify({ preventDefault: () => {} });
-  }
-}, []);
+  // ── NEW: certificate download + Ghana Card search ─────────────────────────
+  const [searchMode, setSearchMode]       = useState('title'); // 'title' | 'ghanaCard'
+  const [downloadingCert, setDownloadingCert] = useState(false);
+  const [ghanaCardInput, setGhanaCardInput]   = useState('');
+  const [cardResults, setCardResults]         = useState(null);
+  const [cardSearching, setCardSearching]     = useState(false);
+  const [cardError, setCardError]             = useState('');
+
+  useEffect(() => {
+    const titleFromUrl = searchParams.get('title');
+    if (titleFromUrl) {
+      setTitleNumber(titleFromUrl);
+      // Trigger verification automatically
+      verify({ preventDefault: () => {} });
+    }
+  }, []);
+
   const verify = async (e) => {
     e.preventDefault();
     const tn = titleNumber.trim().toUpperCase();
@@ -231,6 +240,41 @@ useEffect(() => {
     setShowHistory(true);
   };
 
+  // ── NEW: download the official PDF certificate for the verified title ────
+  const handleDownloadCertificate = async (tn) => {
+    setDownloadingCert(true);
+    try {
+      const response = await api.get(`/land/certificate/${tn}/`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `OLVS_Certificate_${tn.replace(/\//g, '-')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('Could not generate the certificate for this title. The live backend may be offline, or this is demo-only data.');
+    } finally {
+      setDownloadingCert(false);
+    }
+  };
+
+  // ── NEW: find every land record registered to a Ghana Card number ────────
+  const handleSearchByGhanaCard = async (e) => {
+    e.preventDefault();
+    if (!ghanaCardInput.trim()) return;
+    setCardSearching(true); setCardError(''); setCardResults(null);
+    try {
+      const res = await api.get(`/land/by-ghana-card/${encodeURIComponent(ghanaCardInput.trim())}/`);
+      setCardResults(res.data.data);
+    } catch {
+      setCardError('Could not complete the search. Please check the Ghana Card number and try again.');
+    } finally {
+      setCardSearching(false);
+    }
+  };
+
   const statusColorMap = { verified: 'success', disputed: 'danger', transferred: 'info', pending: 'warning', flagged: 'danger' };
 
   return (
@@ -240,45 +284,137 @@ useEffect(() => {
         subtitle="Enter a Ghana Lands Commission title number to verify ownership, documents, and blockchain integrity"
       />
       <VerifyExplainer />
-      {/* Search bar */}
-      <Card style={{ marginBottom: 24 }}>
-        <form onSubmit={verify} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-              Land Title Number
-            </label>
-            <input
-              value={titleNumber}
-              onChange={e => setTitleNumber(e.target.value)}
-              placeholder="e.g. GHA/ACC/CANT/001"
-              style={{
-                width: '100%', background: 'var(--dark-3)',
-                border: '1px solid var(--border)', borderRadius: 10,
-                padding: '11px 16px', fontSize: 15,
-                fontFamily: 'JetBrains Mono', letterSpacing: '0.05em',
-                color: 'var(--text-primary)', outline: 'none',
-              }}
-              onFocus={e => e.target.style.borderColor = 'var(--gold)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'}
-            />
-          </div>
-          <Button type="submit" loading={loading} style={{ height: 44, paddingLeft: 24, paddingRight: 24 }}>
-            🔍 Verify Title
-          </Button>
-        </form>
 
-        {/* Demo quick-fill */}
-        <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Try demo titles:</span>
-          {Object.keys(DUMMY_RECORDS).map(t => (
-            <button key={t} onClick={() => setTitleNumber(t)} style={{
-              fontFamily: 'JetBrains Mono', fontSize: 11, padding: '4px 10px',
-              background: 'var(--dark-4)', border: '1px solid var(--border)',
-              borderRadius: 6, color: 'var(--gold)', cursor: 'pointer',
-            }}>{t}</button>
-          ))}
-        </div>
-      </Card>
+      {/* NEW: search mode tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <button
+          onClick={() => setSearchMode('title')}
+          style={{
+            fontSize: 13, fontWeight: 600, padding: '9px 18px', borderRadius: 8,
+            border: `1px solid ${searchMode === 'title' ? 'var(--gold)' : 'var(--border)'}`,
+            background: searchMode === 'title' ? 'rgba(201,168,76,0.12)' : 'var(--dark-3)',
+            color: searchMode === 'title' ? 'var(--gold)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+          }}
+        >
+          Search by Title Number
+        </button>
+        <button
+          onClick={() => setSearchMode('ghanaCard')}
+          style={{
+            fontSize: 13, fontWeight: 600, padding: '9px 18px', borderRadius: 8,
+            border: `1px solid ${searchMode === 'ghanaCard' ? 'var(--gold)' : 'var(--border)'}`,
+            background: searchMode === 'ghanaCard' ? 'rgba(201,168,76,0.12)' : 'var(--dark-3)',
+            color: searchMode === 'ghanaCard' ? 'var(--gold)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+          }}
+        >
+          Search by Ghana Card
+        </button>
+      </div>
+
+      {/* Search bar */}
+      {searchMode === 'title' && (
+        <Card style={{ marginBottom: 24 }}>
+          <form onSubmit={verify} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                Land Title Number
+              </label>
+              <input
+                value={titleNumber}
+                onChange={e => setTitleNumber(e.target.value)}
+                  style={{
+                  width: '100%', background: 'var(--dark-3)',
+                  border: '1px solid var(--border)', borderRadius: 10,
+                  padding: '11px 16px', fontSize: 15,
+                  fontFamily: 'JetBrains Mono', letterSpacing: '0.05em',
+                  color: 'var(--text-primary)', outline: 'none',
+                }}
+                onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              />
+            </div>
+            <Button type="submit" loading={loading} style={{ height: 44, paddingLeft: 24, paddingRight: 24 }}>
+              🔍 Verify Title
+            </Button>
+          </form>
+
+          {/* Demo quick-fill */}
+          
+        </Card>
+      )}
+
+      {/* NEW: Ghana Card search */}
+      {searchMode === 'ghanaCard' && (
+        <Card style={{ marginBottom: 24 }}>
+          <form onSubmit={handleSearchByGhanaCard} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                Ghana Card Number
+              </label>
+              <input
+                value={ghanaCardInput}
+                onChange={e => setGhanaCardInput(e.target.value)}
+                placeholder="GHA-XXXXXXXXX-X"
+                style={{
+                  width: '100%', background: 'var(--dark-3)',
+                  border: '1px solid var(--border)', borderRadius: 10,
+                  padding: '11px 16px', fontSize: 15,
+                  fontFamily: 'JetBrains Mono', letterSpacing: '0.05em',
+                  color: 'var(--text-primary)', outline: 'none',
+                }}
+                onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              />
+            </div>
+            <Button type="submit" loading={cardSearching} style={{ height: 44, paddingLeft: 24, paddingRight: 24 }}>
+              🔍 Find My Land Records
+            </Button>
+          </form>
+
+          {cardError && <Alert type="danger" style={{ marginTop: 16 }}>{cardError}</Alert>}
+
+          {cardResults && (
+            <div style={{ marginTop: 20 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                {cardResults.count} land record(s) found for this Ghana Card.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {cardResults.results.map(rec => (
+                  <div key={rec.title_number} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'var(--dark-3)', border: '1px solid var(--border)',
+                    borderRadius: 10, padding: '12px 16px', gap: 12, flexWrap: 'wrap',
+                  }}>
+                    <div>
+                      <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--gold)', fontSize: 14 }}>
+                        {rec.title_number}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                        {rec.location}, {rec.region}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {getStatusBadge(rec.status)}
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setSearchMode('title');
+                          setTitleNumber(rec.title_number);
+                          verify({ preventDefault: () => {} });
+                        }}
+                      >
+                        View Full Details
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {error && <Alert type="danger" style={{ marginBottom: 16 }}>{error}</Alert>}
 
@@ -424,8 +560,15 @@ useEffect(() => {
                 </Section>
               )}
 
-              {/* Print / share */}
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              {/* Print / share / certificate */}
+              <div style={{ display: 'flex', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+                {/* NEW: certificate download */}
+                <Button
+                  onClick={() => handleDownloadCertificate(result.title_number)}
+                  loading={downloadingCert}
+                >
+                  📄 Download Certificate (PDF)
+                </Button>
                 <Button variant="secondary" onClick={() => window.print()}>🖨 Print / Save as PDF</Button>
                 <Button variant="ghost" onClick={() => { navigator.clipboard.writeText(result.title_number); }}>📋 Copy Title Number</Button>
               </div>

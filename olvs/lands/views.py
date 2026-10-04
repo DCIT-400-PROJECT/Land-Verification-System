@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db import transaction
 from django.utils import timezone
+from django.http import HttpResponse
 
 from .models import LandRecord, OwnershipRecord, TransferRequest, LandStatus
 from .serializers import (
@@ -58,6 +59,37 @@ class LandQRCodeView(APIView):
         qr_url = LandVerificationService._ensure_qr_code(land)
         return success(data={"title_number": land.title_number, "qr_code_url": qr_url},
                        message="QR code ready.")
+
+
+@extend_schema(tags=["land"], summary="Download official-style land title certificate (PDF)")
+class LandCertificateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, title_number):
+        try:
+            land = LandRecord.objects.get(title_number=title_number.upper())
+        except LandRecord.DoesNotExist:
+            return Response({"success": False, "error": {"code": "NOT_FOUND", "message": "Land not found."}},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        pdf_buffer = LandVerificationService.generate_certificate_pdf(land)
+        filename = f"OLVS_Certificate_{land.title_number.replace('/', '-')}.pdf"
+        response = HttpResponse(pdf_buffer, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+@extend_schema(tags=["land"], summary="List all land records currently owned by a given Ghana Card number")
+class LandsByGhanaCardView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, national_id):
+        results = LandVerificationService.search_by_ghana_card(national_id)
+        return success(data={
+            "national_id": national_id,
+            "count": len(results),
+            "results": results,
+        }, message="Search complete.")
 
 
 # ─── Land Record CRUD (Admin) ─────────────────────────────────────────────────
