@@ -16,6 +16,21 @@ class LandStatus(models.TextChoices):
     FLAGGED = "flagged", "Flagged – Possible Fraud"
 
 
+class LandType(models.TextChoices):
+    FREEHOLD = "freehold", "Freehold"
+    LEASEHOLD_50 = "leasehold_50", "Leasehold (50 years)"
+    LEASEHOLD_99 = "leasehold_99", "Leasehold (99 years)"
+    STOOL_LAND = "stool_land", "Stool Land"
+    STATE_LAND = "state_land", "State Land"
+
+
+class LandUse(models.TextChoices):
+    RESIDENTIAL = "residential", "Residential"
+    COMMERCIAL = "commercial", "Commercial"
+    AGRICULTURAL = "agricultural", "Agricultural"
+    MIXED = "mixed", "Mixed Use"
+
+
 class LandRecord(models.Model):
     """
     Core land parcel record.
@@ -33,12 +48,53 @@ class LandRecord(models.Model):
     status = models.CharField(max_length=15, choices=LandStatus.choices, default=LandStatus.PENDING, db_index=True)
     registered_at = models.DateField(help_text="Date of official registration at the land registry")
     qr_code_path = models.CharField(max_length=255, blank=True, null=True)
+
+    # ── Land details ──────────────────────────────────────────────────────
+    plot_number = models.CharField(max_length=100, blank=True)
+    land_type = models.CharField(max_length=20, choices=LandType.choices, blank=True)
+    land_use = models.CharField(max_length=20, choices=LandUse.choices, blank=True)
+    locality = models.CharField(max_length=150, blank=True)
+    area_acres = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    gps_coordinates = models.CharField(max_length=100, blank=True, help_text="e.g. 5.6500° N, 0.1500° W")
+    beacon_numbers = models.CharField(max_length=255, blank=True, help_text="Comma-separated beacon references")
+
+    # ── Legal documents ──────────────────────────────────────────────────
+    deed_type = models.CharField(max_length=100, blank=True)
+    deed_reference = models.CharField(max_length=100, blank=True)
+    survey_plan_number = models.CharField(max_length=100, blank=True)
+    surveyor_name = models.CharField(max_length=150, blank=True, help_text="Licensed surveyor or firm name")
+    surveyor_license = models.CharField(max_length=50, blank=True)
+    town_planning_approval = models.CharField(max_length=100, blank=True)
+
+    # ── Compliance & encumbrances ────────────────────────────────────────
+    stamp_duty_paid = models.BooleanField(default=False)
+    stamp_duty_ref = models.CharField(max_length=100, blank=True)
+    encumbrances = models.TextField(blank=True, default="None")
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name="created_land_records"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "land_records"
+        verbose_name = "Land Record"
+        verbose_name_plural = "Land Records"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.title_number}] {self.region} – {self.status}"
+
+    @property
+    def current_owner(self):
+        return self.ownership_records.filter(is_current=True).select_related("owner").first()
+
+    @property
+    def ownership_chain(self):
+        return self.ownership_records.order_by("acquired_at")
+
 
     class Meta:
         db_table = "land_records"

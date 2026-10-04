@@ -29,6 +29,11 @@ class LandRecordSerializer(serializers.ModelSerializer):
         fields = [
             "id", "title_number", "location", "region", "district",
             "area_sqm", "status", "registered_at", "qr_code_url",
+            "plot_number", "land_type", "land_use", "locality",
+            "area_acres", "gps_coordinates", "beacon_numbers",
+            "deed_type", "deed_reference", "survey_plan_number",
+            "surveyor_name", "surveyor_license", "town_planning_approval",
+            "stamp_duty_paid", "stamp_duty_ref", "encumbrances",
             "current_owner", "created_by", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "current_owner", "created_by", "qr_code_url"]
@@ -47,6 +52,11 @@ class LandRecordCreateSerializer(serializers.ModelSerializer):
         fields = [
             "title_number", "location", "region", "district",
             "area_sqm", "status", "registered_at",
+            "plot_number", "land_type", "land_use", "locality",
+            "area_acres", "gps_coordinates", "beacon_numbers",
+            "deed_type", "deed_reference", "survey_plan_number",
+            "surveyor_name", "surveyor_license", "town_planning_approval",
+            "stamp_duty_paid", "stamp_duty_ref", "encumbrances",
         ]
 
     def validate_title_number(self, value):
@@ -58,6 +68,7 @@ class LandRecordCreateSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Area must be greater than zero.")
         return value
+
 
 
 class InitialOwnershipSerializer(serializers.Serializer):
