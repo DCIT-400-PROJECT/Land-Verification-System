@@ -121,6 +121,7 @@ class OwnershipRecord(models.Model):
     )
     owner_name = models.CharField(max_length=255, help_text="Full legal name of owner")
     owner_national_id = models.CharField(max_length=30, help_text="National ID of owner")
+    owner_contact = models.CharField(max_length=30, blank=True, help_text="Owner's phone number or contact")
     acquired_at = models.DateField(default=timezone.now, help_text="Date ownership was acquired")
     transferred_at = models.DateField(null=True, blank=True, help_text="Date ownership was transferred away")
     is_current = models.BooleanField(default=True, db_index=True)
@@ -175,6 +176,7 @@ class TransferRequest(models.Model):
 
     new_owner_name = models.CharField(max_length=255)
     new_owner_national_id = models.CharField(max_length=30)
+    new_owner_contact = models.CharField(max_length=30, blank=True)
     new_owner_user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="incoming_transfers"

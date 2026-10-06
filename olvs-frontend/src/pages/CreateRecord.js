@@ -66,7 +66,7 @@ const LAND_USES = [
 export default function CreateRecord() {
   const navigate = useNavigate();
   const [land, setLand] = useState(emptyLand);
-  const [owner, setOwner] = useState({ owner_name: '', owner_national_id: '', acquired_at: '' });
+  const [owner, setOwner] = useState({ owner_name: '', owner_national_id: '', owner_contact: '', acquired_at: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
@@ -183,7 +183,8 @@ export default function CreateRecord() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Field label="Owner full name" placeholder="Kwame Asante" required {...of('owner_name')} />
-            <Field label="Owner national ID" placeholder="GHA-001-XXXX" required {...of('owner_national_id')} />
+            <Field label="Owner national ID" placeholder="GHA-XXXXXXXXX-X" required {...of('owner_national_id')} />
+            <Field label="Owner contact" placeholder="+233 24 456 7890" {...of('owner_contact')} />
             <Field label="Date of ownership" type="date" required {...of('acquired_at')} />
           </div>
         </Card>

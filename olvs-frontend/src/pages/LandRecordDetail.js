@@ -67,6 +67,54 @@ const STATUS_CHANGE_REASONS = [
   'Custom',
 ];
 
+function OwnerContactEditor({ recordId, initialContact, onSaved }) {
+  const [contact, setContact] = useState(initialContact || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const dirty = (contact || '') !== (initialContact || '');
+
+  const inputStyle = {
+    background: 'var(--dark-3)', border: '1px solid var(--border)', borderRadius: 8,
+    padding: '9px 12px', fontSize: 13, color: 'var(--text-primary)', outline: 'none',
+    width: '100%', maxWidth: 260, fontFamily: 'Sora, sans-serif',
+  };
+
+  const handleSave = async () => {
+    setSaving(true); setSaved(false);
+    try {
+      const res = await api.patch(`/land/records/${recordId}/owner-contact/`, { owner_contact: contact.trim() });
+      onSaved(res.data.data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // keep it simple — a failed save just leaves the field editable to retry
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Owner Contact</label>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input
+          style={inputStyle}
+          placeholder="+233 24 456 7890"
+          value={contact}
+          onChange={e => setContact(e.target.value)}
+        />
+        {dirty && (
+          <Button onClick={handleSave} loading={saving} style={{ padding: '8px 16px', fontSize: 13 }}>
+            Save Contact
+          </Button>
+        )}
+        {saved && <span style={{ fontSize: 12, color: 'var(--success)' }}>✓ Saved</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function LandRecordDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -191,14 +239,20 @@ export default function LandRecordDetail() {
       {success && <Alert type="success" style={{ marginBottom: 16 }}>{success}</Alert>}
 
       {record.current_owner && (
-        <Card style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Current Owner</div>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>{record.current_owner.owner_name}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            ID: {record.current_owner.owner_national_id} · Acquired: {record.current_owner.acquired_at}
-          </div>
-        </Card>
-      )}
+  <Card style={{ marginBottom: 20 }}>
+    <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Current Owner</div>
+    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>{record.current_owner.owner_name}</div>
+    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>
+      ID: {record.current_owner.owner_national_id} · Acquired: {record.current_owner.acquired_at}
+    </div>
+
+    <OwnerContactEditor
+      recordId={record.id}
+      initialContact={record.current_owner.owner_contact}
+      onSaved={(updated) => setRecord(r => ({ ...r, current_owner: { ...r.current_owner, owner_contact: updated.owner_contact } }))}
+    />
+  </Card>
+)}
 
       {FIELD_GROUPS.map(group => {
         const isOpen = group.expandable ? !!expandedGroups[group.title] : true;

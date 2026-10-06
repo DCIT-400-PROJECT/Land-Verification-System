@@ -473,7 +473,7 @@ export default function VerifyLand() {
                   <Section title="Current Owner" icon="👤">
                     <InfoRow label="Full Legal Name" value={result.owner?.owner_name || result.owner?.name} highlight />
                     <InfoRow label="National ID" value={result.owner?.owner_national_id || result.owner?.national_id} mono />
-                    <InfoRow label="Contact" value={result.owner?.contact} />
+                    <InfoRow label="Contact" value={result.owner?.owner_contact} />
                     <InfoRow label="Date of Acquisition" value={result.owner?.acquired_at || result.owner?.acquired_at} />
                   </Section>
 

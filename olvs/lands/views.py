@@ -23,6 +23,11 @@ from blockchain.service import BlockchainService
 from audit.models import AuditLog, AuditAction, AuditResult
 from django.db.models import Prefetch
 from .models import OwnershipRecord
+from .serializers import (
+    LandRecordSerializer, LandRecordCreateWithOwnerSerializer, LandRecordUpdateSerializer,
+    OwnershipRecordSerializer, TransferRequestSerializer,
+    TransferRequestCreateSerializer, TransferReviewSerializer,
+)
 
 
 def success(data=None, message="", code=status.HTTP_200_OK):
@@ -146,6 +151,7 @@ class LandRecordCreateView(APIView):
                 land=land,
                 owner_name=owner_data["owner_name"],
                 owner_national_id=owner_data["owner_national_id"],
+                owner_contact=owner_data.get("owner_contact", ""),
                 acquired_at=owner_data["acquired_at"],
                 is_current=True,
                 block_hash=block_hash,
@@ -318,3 +324,32 @@ class TransferRequestReviewView(APIView):
                          land_title=tr.land.title_number, result=AuditResult.FAILED,
                          notes=f"Transfer rejected: {tr.rejection_reason}", request=request)
             return success(message="Transfer request rejected.")
+
+@extend_schema(tags=["land"], summary="Update the current owner's contact number (Admin)")
+class UpdateOwnerContactView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, pk):
+        try:
+            land = LandRecord.objects.get(pk=pk)
+        except LandRecord.DoesNotExist:
+            return Response({"success": False, "error": {"code": "NOT_FOUND", "message": "Land record not found."}},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        current = land.current_owner
+        if current is None:
+            return Response({"success": False, "error": {"code": "NO_OWNER", "message": "This land has no current owner on record."}},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        contact = request.data.get("owner_contact", "").strip()
+        current.owner_contact = contact
+        current.save(update_fields=["owner_contact"])
+
+        AuditLog.log(
+            user=request.user, action=AuditAction.ADMIN_ACTION,
+            land_title=land.title_number, result=AuditResult.SUCCESS,
+            notes=f"Updated contact for current owner {current.owner_name}.",
+            request=request,
+        )
+        return success(data=OwnershipRecordSerializer(current).data,
+                       message="Owner contact updated.")

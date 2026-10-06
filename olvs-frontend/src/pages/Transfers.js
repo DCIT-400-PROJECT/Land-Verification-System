@@ -74,7 +74,7 @@ export default function Transfers() {
       await api.post('/land/transfer/', form);
       setMsg({ type: 'success', text: 'Transfer request submitted successfully.' });
       setShowCreate(false);
-      setForm({ land: '', new_owner_name: '', new_owner_national_id: '', reason: '' });
+      setForm({ land: '', new_owner_name: '', new_owner_national_id: '', new_owner_contact: '', reason: '' });
       load();
     } catch (err) {
       setMsg({ type: 'danger', text: err.response?.data?.error?.message || 'Failed to submit transfer.' });
@@ -119,6 +119,7 @@ export default function Transfers() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <Input label="New owner full name" value={form.new_owner_name} onChange={e => setForm(f => ({ ...f, new_owner_name: e.target.value }))} required />
               <Input label="New owner national ID" value={form.new_owner_national_id} onChange={e => setForm(f => ({ ...f, new_owner_national_id: e.target.value }))} required />
+              <Input label="New owner contact" value={form.new_owner_contact} onChange={e => setForm(f => ({ ...f, new_owner_contact: e.target.value }))} />
             </div>
             <Input label="Reason (optional)" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />
             <Button type="submit" loading={submitting} style={{ alignSelf: 'flex-start' }}>Submit Transfer Request</Button>

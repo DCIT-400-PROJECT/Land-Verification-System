@@ -80,6 +80,7 @@ class LandVerificationService:
             "current_owner": {
                 "owner_name": current_ownership.owner_name if current_ownership else "Unknown",
                 "owner_national_id": current_ownership.owner_national_id if current_ownership else "N/A",
+                "owner_contact": current_ownership.owner_contact if current_ownership else None,
                 "acquired_at": str(current_ownership.acquired_at) if current_ownership else None,
             } if current_ownership else None,
             "blockchain": {
@@ -356,6 +357,7 @@ class OwnershipTransferService:
             owner=transfer_request.new_owner_user,
             owner_name=transfer_request.new_owner_name,
             owner_national_id=transfer_request.new_owner_national_id,
+            owner_contact=transfer_request.new_owner_contact,
             acquired_at=timezone.now().date(),
             is_current=True,
             transfer_reason=transfer_request.reason,

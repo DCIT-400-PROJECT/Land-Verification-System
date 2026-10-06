@@ -12,7 +12,7 @@ class OwnershipRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = OwnershipRecord
         fields = [
-            "id", "owner_details", "owner_name", "owner_national_id",
+            "id", "owner_details", "owner_name", "owner_national_id", "owner_contact",
             "acquired_at", "transferred_at", "is_current",
             "block_hash", "prev_hash", "block_index", "created_at",
         ]
@@ -79,6 +79,7 @@ class InitialOwnershipSerializer(serializers.Serializer):
     """Used when creating a new land record to set the first (genesis) owner."""
     owner_name = serializers.CharField(max_length=255)
     owner_national_id = serializers.CharField(max_length=30)
+    owner_contact = serializers.CharField(max_length=30, required=False, allow_blank=True)
     acquired_at = serializers.DateField()
 
 
@@ -120,7 +121,7 @@ class TransferRequestSerializer(serializers.ModelSerializer):
         model = TransferRequest
         fields = [
             "id", "land", "land_title",
-            "previous_owner_name", "previous_owner_national_id",
+            "previous_owner_name", "previous_owner_national_id","new_owner_contact"
             "new_owner_name", "new_owner_national_id", "new_owner_user",
             "reason", "status",
             "requested_by_details", "reviewed_by_details",
