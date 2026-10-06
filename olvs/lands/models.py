@@ -71,30 +71,23 @@ class LandRecord(models.Model):
     stamp_duty_ref = models.CharField(max_length=100, blank=True)
     encumbrances = models.TextField(blank=True, default="None")
 
+    # ── Status change tracking ───────────────────────────────────────────
+    status_change_reason = models.TextField(
+        blank=True, default="",
+        help_text="Reason given for the most recent status change (e.g. why a land was marked Disputed)"
+    )
+    status_changed_at = models.DateTimeField(null=True, blank=True)
+    status_changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="land_status_changes"
+    )
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name="created_land_records"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "land_records"
-        verbose_name = "Land Record"
-        verbose_name_plural = "Land Records"
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"[{self.title_number}] {self.region} – {self.status}"
-
-    @property
-    def current_owner(self):
-        return self.ownership_records.filter(is_current=True).select_related("owner").first()
-
-    @property
-    def ownership_chain(self):
-        return self.ownership_records.order_by("acquired_at")
-
 
     class Meta:
         db_table = "land_records"
@@ -151,7 +144,6 @@ class OwnershipRecord(models.Model):
         verbose_name_plural = "Ownership Records"
         ordering = ["land", "block_index"]
         constraints = [
-            # Only one current owner per land
             models.UniqueConstraint(
                 fields=["land"],
                 condition=models.Q(is_current=True),
@@ -175,6 +167,12 @@ class TransferRequest(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     land = models.ForeignKey(LandRecord, on_delete=models.PROTECT, related_name="transfer_requests")
+
+    # Snapshot of the owner at the moment the request was made, so the UI can always
+    # show "previous owner -> new owner" even after later transfers change current_owner.
+    previous_owner_name = models.CharField(max_length=255, blank=True)
+    previous_owner_national_id = models.CharField(max_length=30, blank=True)
+
     new_owner_name = models.CharField(max_length=255)
     new_owner_national_id = models.CharField(max_length=30)
     new_owner_user = models.ForeignKey(

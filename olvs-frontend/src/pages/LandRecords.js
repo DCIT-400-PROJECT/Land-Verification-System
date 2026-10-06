@@ -34,6 +34,15 @@ export default function LandRecords() {
 
   return (
     <div className="fade-in">
+      <div style={{ marginBottom: 16 }}>
+        <Link to="/admin" style={{
+          fontSize: 13, color: 'var(--text-secondary)', display: 'inline-flex',
+          alignItems: 'center', gap: 6, textDecoration: 'none'
+        }}>
+          ← Back to Dashboard
+        </Link>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <PageTitle title="Land Records" subtitle={`${count} total records in the system`} />
         <Link to="/admin/records/create">
@@ -62,7 +71,6 @@ export default function LandRecords() {
             </div>
           ) : (
             <div>
-              {/* Header */}
               <div style={{
                 display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto',
                 gap: 16, padding: '12px 20px',
@@ -96,7 +104,6 @@ export default function LandRecords() {
         </Card>
       )}
 
-      {/* Pagination */}
       {count > 20 && (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 20 }}>
           <Button variant="secondary" onClick={() => { setPage(p => p - 1); load(search, page - 1); }} style={{ padding: '7px 16px' }} disabled={page === 1}>← Prev</Button>

@@ -4,6 +4,10 @@ import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Alert, Badge, getStatusBadge, PageTitle } from '../components/UI';
 import VerifyExplainer from '../components/VerifyExplainer';
 
+// Media files (QR codes, etc.) are served from the backend's origin root,
+// not under /api — so strip the /api suffix from the axios baseURL.
+const BACKEND_ORIGIN = api.defaults.baseURL.replace(/\/api\/?$/, '');
+
 // ── Dummy land records matching Ghana Land Commission data fields ──────────────
 const DUMMY_RECORDS = {
   'GHA/ACC/CANT/001': {
@@ -198,36 +202,32 @@ export default function VerifyLand() {
     }
   }, []);
 
-  const verify = async (e) => {
-    e.preventDefault();
-    const tn = titleNumber.trim().toUpperCase();
-    if (!tn) return;
-    setLoading(true); setError(''); setResult(null);
-    setHistory(null); setShowHistory(false);
+  const verify = async (e, titleOverride) => {
+  e.preventDefault();
+  const tn = (titleOverride || titleNumber).trim().toUpperCase();
+  if (!tn) return;
+  setLoading(true); setError(''); setResult(null);
+  setHistory(null); setShowHistory(false);
 
-    // Try live API first
-    try {
-      const res = await api.get(`/land/verify/${tn}/`);
-      const data = res.data.data;
-      if (data.found) {
-        // Merge with dummy enrichment data if available
-        const extra = DUMMY_RECORDS[tn] || {};
-        setResult({ ...extra, ...data.land, owner: data.current_owner, blockchain: data.blockchain, qr_code_url: data.qr_code_url, found: true });
-        setSource('api');
-      } else {
-        // Fall back to demo data
-        const demo = DUMMY_RECORDS[tn];
-        if (demo) { setResult({ ...demo, found: true }); setSource('demo'); }
-        else { setResult({ found: false }); }
-      }
-    } catch {
-      // Offline fallback to demo data
+  try {
+    const res = await api.get(`/land/verify/${tn}/`);
+    const data = res.data.data;
+    if (data.found) {
+      const extra = DUMMY_RECORDS[tn] || {};
+      setResult({ ...extra, ...data.land, owner: data.current_owner, blockchain: data.blockchain, qr_code_url: data.qr_code_url, found: true });
+      setSource('api');
+    } else {
       const demo = DUMMY_RECORDS[tn];
       if (demo) { setResult({ ...demo, found: true }); setSource('demo'); }
       else { setResult({ found: false }); }
     }
-    setLoading(false);
-  };
+  } catch {
+    const demo = DUMMY_RECORDS[tn];
+    if (demo) { setResult({ ...demo, found: true }); setSource('demo'); }
+    else { setResult({ found: false }); }
+  }
+  setLoading(false);
+};
 
   const loadHistory = async () => {
     if (showHistory) { setShowHistory(false); return; }
@@ -261,20 +261,28 @@ export default function VerifyLand() {
   };
 
   // ── NEW: find every land record registered to a Ghana Card number ────────
-  const handleSearchByGhanaCard = async (e) => {
-    e.preventDefault();
-    if (!ghanaCardInput.trim()) return;
-    setCardSearching(true); setCardError(''); setCardResults(null);
-    try {
-      const res = await api.get(`/land/by-ghana-card/${encodeURIComponent(ghanaCardInput.trim())}/`);
-      setCardResults(res.data.data);
-    } catch {
-      setCardError('Could not complete the search. Please check the Ghana Card number and try again.');
-    } finally {
-      setCardSearching(false);
+ const handleSearchByGhanaCard = async (e) => {
+  e.preventDefault();
+  if (!ghanaCardInput.trim()) return;
+  setCardSearching(true); setCardError(''); setCardResults(null);
+  try {
+    const res = await api.get(`/land/by-ghana-card/${encodeURIComponent(ghanaCardInput.trim())}/`);
+    const data = res.data.data;
+    if (data.count === 1) {
+      // Same identity, same depth of result as a title search — go straight to full detail.
+      const tn = data.results[0].title_number;
+      setSearchMode('title');
+      setTitleNumber(tn);
+      await verify({ preventDefault: () => {} }, tn);
+    } else {
+      setCardResults(data);
     }
-  };
-
+  } catch {
+    setCardError('Could not complete the search. Please check the Ghana Card number and try again.');
+  } finally {
+    setCardSearching(false);
+  }
+};
   const statusColorMap = { verified: 'success', disputed: 'danger', transferred: 'info', pending: 'warning', flagged: 'danger' };
 
   return (
@@ -512,11 +520,11 @@ export default function VerifyLand() {
                   {result.qr_code_url && (
                     <Section title="QR Verification Code" icon="📱">
                       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                        <img
-                          src={result.qr_code_url.startsWith('http') ? result.qr_code_url : `http://localhost:8000${result.qr_code_url}`}
-                          alt="QR Code"
-                          style={{ width: 90, height: 90, background: '#fff', padding: 6, borderRadius: 8 }}
-                        />
+                     <img
+                        src={result.qr_code_url.startsWith('http') ? result.qr_code_url : `${BACKEND_ORIGIN}${result.qr_code_url}`}
+                        alt="QR Code"
+                        style={{ width: 90, height: 90, background: '#fff', padding: 6, borderRadius: 8 }}
+                      />
                         <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                           Scan to instantly re-verify this land title without typing the number.
                         </span>

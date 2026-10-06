@@ -18,15 +18,21 @@ function TransferCard({ tr, onReview }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div>
+  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Previous owner</div>
+  <div style={{ fontSize: 14, fontWeight: 500 }}>{tr.previous_owner_name || '—'}</div>
+  {tr.previous_owner_national_id && (
+    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>ID: {tr.previous_owner_national_id}</div>
+  )}
+</div>
+        <div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>New owner</div>
           <div style={{ fontSize: 14, fontWeight: 500 }}>{tr.new_owner_name}</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>ID: {tr.new_owner_national_id}</div>
         </div>
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Requested by</div>
-          <div style={{ fontSize: 14 }}>{tr.requested_by_details?.full_name || '—'}</div>
-        </div>
       </div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Requested by</div>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>{tr.requested_by_details?.full_name || '—'}</div>
+
       {tr.reason && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>Reason: {tr.reason}</div>}
       {tr.status === 'pending' && (
         <div style={{ display: 'flex', gap: 8 }}>
@@ -144,7 +150,6 @@ export default function Transfers() {
         </>
       )}
 
-      {/* Reject modal */}
       {rejectModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',

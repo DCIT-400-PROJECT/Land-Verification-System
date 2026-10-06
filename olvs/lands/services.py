@@ -18,6 +18,9 @@ from audit.models import AuditLog, AuditAction, AuditResult
 
 class LandVerificationService:
 
+
+
+
     @staticmethod
     def verify_land(title_number: str, requesting_user) -> dict:
         """
@@ -99,6 +102,7 @@ class LandVerificationService:
         )
         return result
 
+   
     @staticmethod
     def _ensure_qr_code(land: LandRecord) -> str | None:
         """Generate and save QR code if not already present. Returns media URL."""
@@ -108,8 +112,8 @@ class LandVerificationService:
         qr_dir = os.path.join(settings.MEDIA_ROOT, "qr_codes")
         os.makedirs(qr_dir, exist_ok=True)
 
-        # QR content: a URL the frontend would serve for instant re-verification
-        qr_content = f"OLVS:{land.title_number}"
+        # QR content must be an actual URL so scanning it opens the verify page directly
+        qr_content = f"{settings.FRONTEND_BASE_URL}/verify?title={land.title_number}"
         img = qrcode.make(qr_content)
         filename = f"qr_{land.title_number.replace('/', '_')}.png"
         filepath = os.path.join(qr_dir, filename)
@@ -298,7 +302,6 @@ class LandVerificationService:
             }
             for r in records
         ]
-
 
 class OwnershipTransferService:
 

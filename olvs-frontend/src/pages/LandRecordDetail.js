@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { Card, Button, Badge, Spinner, getStatusBadge, PageTitle, Alert } from '../components/UI';
+import MapPicker from '../components/MapPicker';
 
 const FIELD_GROUPS = [
   {
@@ -17,6 +18,7 @@ const FIELD_GROUPS = [
   },
   {
     title: 'Land Details',
+    expandable: true,
     fields: [
       ['plot_number', 'Plot number', 'text'],
       ['locality', 'Locality', 'text'],
@@ -29,7 +31,7 @@ const FIELD_GROUPS = [
         ['agricultural', 'Agricultural'], ['mixed', 'Mixed Use'],
       ]],
       ['area_acres', 'Area (acres)', 'number'],
-      ['gps_coordinates', 'GPS coordinates', 'text'],
+      ['gps_coordinates', 'GPS coordinates', 'map'],
       ['beacon_numbers', 'Beacon numbers', 'text'],
     ],
   },
@@ -54,6 +56,17 @@ const FIELD_GROUPS = [
   },
 ];
 
+const STATUS_CHANGE_REASONS = [
+  'Pending/ongoing court case',
+  'Boundary or beacon discrepancy found',
+  'Duplicate or conflicting title claim',
+  'Missing or invalid supporting documents',
+  'Fraud or tampering suspected',
+  'Dispute resolved / cleared for verification',
+  'Routine administrative correction',
+  'Custom',
+];
+
 export default function LandRecordDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -65,6 +78,11 @@ export default function LandRecordDetail() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [status, setStatus] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [statusReason, setStatusReason] = useState('');
+  const [statusReasonCustom, setStatusReasonCustom] = useState('');
+
+  const baseline = useRef(null); // snapshot of { form, status } as last loaded/saved
 
   const load = async () => {
     setLoading(true); setError('');
@@ -74,6 +92,9 @@ export default function LandRecordDetail() {
       setRecord(rec);
       setForm(rec);
       setStatus(rec.status);
+      setStatusReason('');
+      setStatusReasonCustom('');
+      baseline.current = { form: rec, status: rec.status };
       if (rec.title_number) {
         try {
           const histRes = await api.get(`/land/history/${rec.title_number}/`);
@@ -101,13 +122,43 @@ export default function LandRecordDetail() {
   };
   const labelStyle = { fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 };
 
+  const statusChanged = baseline.current && status !== baseline.current.status;
+
+  const isDirty = baseline.current && (
+    JSON.stringify(form) !== JSON.stringify(baseline.current.form) ||
+    status !== baseline.current.status
+  );
+
+  const reasonSatisfied = !statusChanged || (
+    statusReason && (statusReason !== 'Custom' || statusReasonCustom.trim())
+  );
+
+  const canSave = isDirty && reasonSatisfied;
+
+  const toggleGroup = (title) => setExpandedGroups(g => ({ ...g, [title]: !g[title] }));
+
+ const handleCancel = () => {
+  if (baseline.current) {
+    setForm(baseline.current.form);
+    setStatus(baseline.current.status);
+  }
+  setStatusReason('');
+  setStatusReasonCustom('');
+  setError('');
+  setSuccess('');
+  // Stay on this page — just discard the unsaved changes.
+};
   const handleSave = async () => {
+    if (!canSave) return;
     setSaving(true); setError(''); setSuccess('');
     try {
       const payload = { ...form, status };
       delete payload.id; delete payload.current_owner; delete payload.created_by;
       delete payload.created_at; delete payload.updated_at; delete payload.qr_code_url;
       if (payload.area_acres === '') payload.area_acres = null;
+      if (statusChanged) {
+        payload.status_change_reason = statusReason === 'Custom' ? statusReasonCustom.trim() : statusReason;
+      }
       await api.patch(`/land/records/${id}/`, payload);
       setSuccess('Land record updated successfully.');
       await load();
@@ -149,36 +200,66 @@ export default function LandRecordDetail() {
         </Card>
       )}
 
-      {FIELD_GROUPS.map(group => (
-        <Card key={group.title} style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: 'var(--gold)' }}>{group.title}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-            {group.fields.map(([key, label, type, options]) => (
-              <div key={key} style={type === 'checkbox' ? { display: 'flex', alignItems: 'center', gap: 8 } : {}}>
-                {type === 'checkbox' ? (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    <input type="checkbox" checked={!!form[key]} onChange={setF(key, type)} />
-                    {label}
-                  </label>
-                ) : type === 'select' ? (
-                  <>
-                    <label style={labelStyle}>{label}</label>
-                    <select style={inputStyle} value={form[key] || ''} onChange={setF(key, type)}>
-                      <option value="">Select…</option>
-                      {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                    </select>
-                  </>
-                ) : (
-                  <>
-                    <label style={labelStyle}>{label}</label>
-                    <input style={inputStyle} type={type} value={form[key] || ''} onChange={setF(key, type)} />
-                  </>
+      {FIELD_GROUPS.map(group => {
+        const isOpen = group.expandable ? !!expandedGroups[group.title] : true;
+        return (
+          <Card key={group.title} style={{ marginBottom: 20 }}>
+            <div
+              onClick={group.expandable ? () => toggleGroup(group.title) : undefined}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                marginBottom: isOpen ? 16 : 0, cursor: group.expandable ? 'pointer' : 'default',
+              }}>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--gold)', margin: 0 }}>{group.title}</h2>
+              {group.expandable && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{isOpen ? 'Collapse ▲' : 'Expand ▼'}</span>
+              )}
+            </div>
+
+            {isOpen && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+                  {group.fields.filter(([, , type]) => type !== 'map').map(([key, label, type, options]) => (
+                    <div key={key} style={type === 'checkbox' ? { display: 'flex', alignItems: 'center', gap: 8 } : {}}>
+                      {type === 'checkbox' ? (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+                          <input type="checkbox" checked={!!form[key]} onChange={setF(key, type)} />
+                          {label}
+                        </label>
+                      ) : type === 'select' ? (
+                        <>
+                          <label style={labelStyle}>{label}</label>
+                          <select style={inputStyle} value={form[key] || ''} onChange={setF(key, type)}>
+                            <option value="">Select…</option>
+                            {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                          </select>
+                        </>
+                      ) : (
+                        <>
+                          <label style={labelStyle}>{label}</label>
+                          <input style={inputStyle} type={type} value={form[key] || ''} onChange={setF(key, type)} />
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Interactive map for GPS coordinates, with the pinned location */}
+                {group.fields.some(([, , type]) => type === 'map') && (
+                  <div style={{ marginTop: 16 }}>
+                    <label style={labelStyle}>GPS coordinates (pinned location)</label>
+                    <MapPicker
+                      value={form.gps_coordinates}
+                      onChange={(coords) => setForm(f => ({ ...f, gps_coordinates: coords }))}
+                      height={280}
+                    />
+                  </div>
                 )}
-              </div>
-            ))}
-          </div>
-        </Card>
-      ))}
+              </>
+            )}
+          </Card>
+        );
+      })}
 
       <Card style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--gold)' }}>Status</h2>
@@ -189,10 +270,41 @@ export default function LandRecordDetail() {
           <option value="pending">Pending</option>
           <option value="flagged">Flagged</option>
         </select>
+
+        {statusChanged && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <label style={labelStyle}>
+              Reason for changing status to "{status}" <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <select
+              style={{ ...inputStyle, maxWidth: 360 }}
+              value={statusReason}
+              onChange={e => setStatusReason(e.target.value)}
+            >
+              <option value="">Select a reason…</option>
+              {STATUS_CHANGE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            {statusReason === 'Custom' && (
+              <input
+                style={{ ...inputStyle, maxWidth: 360, marginTop: 10 }}
+                placeholder="Describe the reason for this status change"
+                value={statusReasonCustom}
+                onChange={e => setStatusReasonCustom(e.target.value)}
+              />
+            )}
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
+              Status changes (e.g. marking a record as Disputed because of a pending court case) are recorded
+              independently of ownership transfers — no transfer request is needed here.
+            </div>
+          </div>
+        )}
       </Card>
 
-      <div style={{ marginBottom: 24 }}>
-        <Button onClick={handleSave} loading={saving}>Save All Changes</Button>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+        {canSave && (
+          <Button onClick={handleSave} loading={saving}>Save All Changes</Button>
+        )}
+        <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
       </div>
 
       {history && (
@@ -226,4 +338,3 @@ export default function LandRecordDetail() {
     </div>
   );
 }
-

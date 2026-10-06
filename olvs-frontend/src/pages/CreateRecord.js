@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { Card, Button, Alert, PageTitle } from '../components/UI';
+import MapPicker from '../components/MapPicker';
 
 const emptyLand = {
   title_number: '', location: '', region: '', district: '',
@@ -130,10 +131,19 @@ export default function CreateRecord() {
               <Field label="Land type" options={LAND_TYPES} {...lf('land_type')} />
               <Field label="Land use" options={LAND_USES} {...lf('land_use')} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <Field label="Area (acres)" type="number" placeholder="0.178" {...lf('area_acres')} />
-              <Field label="GPS coordinates" placeholder="5.6500° N, 0.1500° W" {...lf('gps_coordinates')} />
+            <Field label="Area (acres)" type="number" placeholder="0.178" {...lf('area_acres')} />
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label style={labelStyle}>GPS coordinates</label>
+              <MapPicker
+                value={land.gps_coordinates}
+                onChange={(coords) => setLand(f => ({ ...f, gps_coordinates: coords }))}
+              />
+              {errors.land?.gps_coordinates?.[0] && (
+                <span style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{errors.land.gps_coordinates[0]}</span>
+              )}
             </div>
+
             <Field label="Beacon numbers" placeholder="BK-5501, BK-5502, BK-5503" {...lf('beacon_numbers')} />
           </div>
         </Card>

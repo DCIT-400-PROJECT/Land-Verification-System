@@ -14,6 +14,7 @@ export default function AuditLog() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ action: '', result: '' });
+  const [expanded, setExpanded] = useState(null);
 
   const load = async () => {
     try {
@@ -73,31 +74,70 @@ export default function AuditLog() {
           ) : (
             <div>
               <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
+                display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 0.8fr 0.6fr',
                 gap: 12, padding: '12px 20px',
                 borderBottom: '1px solid var(--border)',
                 fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em'
               }}>
-                <span>Timestamp</span><span>User</span><span>Action</span><span>Land title</span><span>Result</span>
+                <span>Timestamp</span><span>User</span><span>Action</span><span>Land title</span><span>Result</span><span></span>
               </div>
-              {logs.map((log, i) => (
-                <div key={log.id} style={{
-                  display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
-                  gap: 12, padding: '12px 20px', alignItems: 'center',
-                  borderBottom: i < logs.length - 1 ? '1px solid var(--border)' : 'none',
-                  fontSize: 13, transition: 'background 0.15s'
-                }}
-                onMouseOver={e => e.currentTarget.style.background = 'var(--dark-3)'}
-                onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-                  <span style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-muted)' }}>
-                    {new Date(log.timestamp).toLocaleString()}
-                  </span>
-                  <span style={{ color: 'var(--text-secondary)' }}>{log.user?.full_name || 'Anonymous'}</span>
-                  <Badge type={actionColor[log.action] || 'default'}>{log.action.replace('_', ' ')}</Badge>
-                  <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: 'var(--gold)' }}>{log.land_title || '—'}</span>
-                  <Badge type={resultColor[log.result]}>{log.result}</Badge>
-                </div>
-              ))}
+              {logs.map((log, i) => {
+                const isOpen = expanded === log.id;
+                return (
+                  <div key={log.id} style={{ borderBottom: i < logs.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <div
+                      onClick={() => setExpanded(isOpen ? null : log.id)}
+                      style={{
+                        display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 0.8fr 0.6fr',
+                        gap: 12, padding: '12px 20px', alignItems: 'center',
+                        fontSize: 13, transition: 'background 0.15s', cursor: 'pointer'
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = 'var(--dark-3)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                      <span style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-muted)' }}>
+                        {new Date(log.timestamp).toLocaleString()}
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{log.user?.full_name || 'Anonymous'}</span>
+                      <Badge type={actionColor[log.action] || 'default'}>{log.action.replace('_', ' ')}</Badge>
+                      <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: 'var(--gold)' }}>{log.land_title || '—'}</span>
+                      <Badge type={resultColor[log.result]}>{log.result}</Badge>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{isOpen ? 'Hide ▲' : 'Details ▼'}</span>
+                    </div>
+
+                    {isOpen && (
+                      <div style={{
+                        padding: '14px 20px 18px 20px', background: 'var(--dark-3)',
+                        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, fontSize: 13,
+                      }}>
+                        <div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>User email</div>
+                          <div style={{ color: 'var(--text-secondary)' }}>{log.user?.email || '—'}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>IP address</div>
+                          <div style={{ fontFamily: 'JetBrains Mono', color: 'var(--text-secondary)' }}>{log.ip_address || '—'}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Land title</div>
+                          <div style={{ fontFamily: 'JetBrains Mono', color: 'var(--gold)' }}>{log.land_title || '—'}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Entry ID</div>
+                          <div style={{ fontFamily: 'JetBrains Mono', color: 'var(--text-muted)' }}>{log.id}</div>
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Notes / outcome detail</div>
+                          <div style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>{log.notes || 'No additional notes recorded.'}</div>
+                        </div>
+                        <div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Device / browser</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 12, wordBreak: 'break-word' }}>{log.user_agent || '—'}</div>
+                        </div>
+                      </div>
+                       )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </Card>

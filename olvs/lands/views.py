@@ -12,7 +12,7 @@ from django.http import HttpResponse
 
 from .models import LandRecord, OwnershipRecord, TransferRequest, LandStatus
 from .serializers import (
-    LandRecordSerializer, LandRecordCreateWithOwnerSerializer,
+    LandRecordSerializer, LandRecordCreateWithOwnerSerializer, LandRecordUpdateSerializer,
     OwnershipRecordSerializer, TransferRequestSerializer,
     TransferRequestCreateSerializer, TransferReviewSerializer,
 )
@@ -155,17 +155,50 @@ class LandRecordCreateView(APIView):
                        message="Land record created with genesis ownership block.",
                        code=status.HTTP_201_CREATED)
 
-
 @extend_schema(tags=["land"], summary="Get, update, or flag a land record (Admin)")
 class LandRecordDetailView(generics.RetrieveUpdateAPIView):
-    serializer_class = LandRecordSerializer
-    permission_classes = [IsAdminUser]
     queryset = LandRecord.objects.all()
+    permission_classes = [IsAdminUser]
     lookup_field = "pk"
+
+    def get_serializer_class(self):
+        if self.request.method in ("PATCH", "PUT"):
+            return LandRecordUpdateSerializer
+        return LandRecordSerializer
 
     def update(self, request, *args, **kwargs):
         kwargs["partial"] = True
-        return super().update(request, *args, **kwargs)
+        instance = self.get_object()
+        old_status = instance.status
+
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data.pop("status_change_reason", "")
+        new_status = serializer.validated_data.get("status", old_status)
+
+        if new_status != old_status:
+            if not reason.strip():
+                return Response(
+                    {"success": False, "error": {"code": "REASON_REQUIRED",
+                                                  "message": "A reason is required when changing status."}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            serializer.save(
+                status_change_reason=reason.strip(),
+                status_changed_at=timezone.now(),
+                status_changed_by=request.user,
+            )
+            AuditLog.log(
+                user=request.user, action=AuditAction.ADMIN_ACTION,
+                land_title=instance.title_number, result=AuditResult.SUCCESS,
+                notes=f"Status changed {old_status} → {new_status}. Reason: {reason.strip()}",
+                request=request,
+            )
+        else:
+            serializer.save()
+
+        return success(data=LandRecordSerializer(instance, context={"request": request}).data,
+                       message="Land record updated successfully.")
 
 
 @extend_schema(tags=["land"], summary="Get full ownership history (blockchain chain) for a land")
@@ -211,20 +244,26 @@ class TransferRequestCreateView(generics.CreateAPIView):
     serializer_class = TransferRequestCreateSerializer
     permission_classes = [IsAdminUser]
 
-    def perform_create(self, serializer):
-        serializer.save(requested_by=self.request.user)
-
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        tr = serializer.save(requested_by=request.user)
+
+        land = serializer.validated_data["land"]
+        current = land.current_owner  # OwnershipRecord or None
+
+        tr = serializer.save(
+            requested_by=request.user,
+            previous_owner_name=current.owner_name if current else "",
+            previous_owner_national_id=current.owner_national_id if current else "",
+        )
+
         AuditLog.log(user=request.user, action=AuditAction.TRANSFER_REQUEST,
                      land_title=tr.land.title_number, result=AuditResult.SUCCESS,
-                     notes=f"Transfer request to {tr.new_owner_name}", request=request)
+                     notes=f"Transfer request: {tr.previous_owner_name or 'unknown'} → {tr.new_owner_name}",
+                     request=request)
         return success(data=TransferRequestSerializer(tr).data,
                        message="Transfer request submitted.",
                        code=status.HTTP_201_CREATED)
-
 
 @extend_schema(tags=["transfer"], summary="List all transfer requests (Admin)")
 class TransferRequestListView(generics.ListAPIView):
