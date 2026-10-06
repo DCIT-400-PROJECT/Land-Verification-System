@@ -4,7 +4,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoibXItZGVycmljazEiLCJhIjoiY211dW4zN2R6MWZxNTJ6czF1ZGowZTRvcCJ9.6tPFqOn2ndBlpkgVaD5COQ';
 
-// Parses "5.6500° N, 0.1500° W" style strings (and plain "lat, lng") back into [lng, lat]
 function parseCoordinates(str) {
   if (!str) return null;
   const m = str.match(/(-?\d+(\.\d+)?)\s*°?\s*([NSns]?)[,\s]+(-?\d+(\.\d+)?)\s*°?\s*([EWew]?)/);
@@ -22,17 +21,52 @@ function formatCoordinates(lng, lat) {
   return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`;
 }
 
+// Looks up the human-readable address for a pin's coordinates via Mapbox reverse geocoding
+async function reverseGeocode(lng, lat) {
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&limit=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.features?.[0]?.place_name || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function MapPicker({ value, onChange, height = 320 }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const popupRef = useRef(null);
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef(null);
 
+  const showPopupAt = async (lng, lat) => {
+    const popup = popupRef.current;
+    if (!popup) return;
+
+    popup.setLngLat([lng, lat])
+      .setHTML(`
+        <div style="font-family: Sora, sans-serif; font-size: 12px; min-width: 180px;">
+          <div style="font-weight: 600; margin-bottom: 4px; color: #C9A227;">${formatCoordinates(lng, lat)}</div>
+          <div style="color: #888;">Looking up address…</div>
+        </div>
+      `)
+      .addTo(mapRef.current);
+
+    const address = await reverseGeocode(lng, lat);
+    popup.setHTML(`
+      <div style="font-family: Sora, sans-serif; font-size: 12px; min-width: 180px; max-width: 240px;">
+        <div style="font-weight: 600; margin-bottom: 4px; color: #C9A227;">${formatCoordinates(lng, lat)}</div>
+        <div style="color: #333; line-height: 1.4;">${address || 'No address found for this exact point.'}</div>
+      </div>
+    `);
+  };
+
   useEffect(() => {
-    const initial = parseCoordinates(value) || [-0.1870, 5.6037]; // defaults to Accra, Ghana
+    const initial = parseCoordinates(value) || [-0.1870, 5.6037];
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
@@ -41,23 +75,34 @@ export default function MapPicker({ value, onChange, height = 320 }) {
     });
     mapRef.current = map;
 
+    const popup = new mapboxgl.Popup({ offset: 28, closeButton: true });
+    popupRef.current = popup;
+
     const marker = new mapboxgl.Marker({ color: '#D4AF37', draggable: true })
       .setLngLat(initial)
       .addTo(map);
     markerRef.current = marker;
 
+    // Click the pin to see its exact location
+    marker.getElement().addEventListener('click', (e) => {
+      e.stopPropagation(); // don't let the map's own click handler also fire
+      const { lng, lat } = marker.getLngLat();
+      showPopupAt(lng, lat);
+    });
+
     marker.on('dragend', () => {
       const { lng, lat } = marker.getLngLat();
       onChange(formatCoordinates(lng, lat));
+      showPopupAt(lng, lat);
     });
 
     map.on('click', (e) => {
       marker.setLngLat(e.lngLat);
       onChange(formatCoordinates(e.lngLat.lng, e.lngLat.lat));
+      showPopupAt(e.lngLat.lng, e.lngLat.lat);
     });
 
     return () => map.remove();
-    
   }, []);
 
   const runSearch = (text) => {
@@ -84,6 +129,7 @@ export default function MapPicker({ value, onChange, height = 320 }) {
     mapRef.current.flyTo({ center: [lng, lat], zoom: 16, essential: true });
     markerRef.current.setLngLat([lng, lat]);
     onChange(formatCoordinates(lng, lat));
+    showPopupAt(lng, lat);
     setQuery(feature.place_name);
     setSuggestions([]);
   };
@@ -125,7 +171,7 @@ export default function MapPicker({ value, onChange, height = 320 }) {
       <div ref={mapContainer} style={{ width: '100%', height, borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)' }} />
 
       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
-        Search a place, click the map, or drag the pin to set the exact GPS coordinates.
+        Search a place, click the map, or drag the pin to set the exact GPS coordinates. Click the pin itself to see its exact location.
         {value && <span style={{ color: 'var(--gold)', marginLeft: 6, fontFamily: 'JetBrains Mono' }}>{value}</span>}
       </div>
     </div>

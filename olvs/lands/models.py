@@ -97,11 +97,11 @@ class LandRecord(models.Model):
 
     def __str__(self):
         return f"[{self.title_number}] {self.region} – {self.status}"
-
     @property
     def current_owner(self):
+        if hasattr(self, "_prefetched_ownership_records"):
+            return next((r for r in self._prefetched_ownership_records if r.is_current), None)
         return self.ownership_records.filter(is_current=True).select_related("owner").first()
-
     @property
     def ownership_chain(self):
         return self.ownership_records.order_by("acquired_at")

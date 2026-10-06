@@ -21,6 +21,8 @@ from accounts.permissions import IsAdminUser, IsCitizenUser
 from accounts.throttles import VerificationRateThrottle
 from blockchain.service import BlockchainService
 from audit.models import AuditLog, AuditAction, AuditResult
+from django.db.models import Prefetch
+from .models import OwnershipRecord
 
 
 def success(data=None, message="", code=status.HTTP_200_OK):
@@ -101,8 +103,13 @@ class LandRecordListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["title_number", "region", "district", "location"]
     ordering_fields = ["created_at", "title_number", "status"]
-    queryset = LandRecord.objects.select_related("created_by").prefetch_related("ownership_records").all()
-
+    queryset = LandRecord.objects.select_related("created_by").prefetch_related(
+        Prefetch(
+            "ownership_records",
+            queryset=OwnershipRecord.objects.select_related("owner"),
+            to_attr="_prefetched_ownership_records",
+        )
+    ).all()
 
 @extend_schema(tags=["land"], summary="Create new land record with genesis owner (Admin)")
 class LandRecordCreateView(APIView):
