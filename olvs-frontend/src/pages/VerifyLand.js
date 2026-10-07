@@ -214,7 +214,7 @@ export default function VerifyLand() {
     const data = res.data.data;
     if (data.found) {
       const extra = DUMMY_RECORDS[tn] || {};
-      setResult({ ...extra, ...data.land, owner: data.current_owner, blockchain: data.blockchain, qr_code_url: data.qr_code_url, found: true });
+      setResult({ ...extra, ...data.land, owner: data.current_owner, previous_owner: data.previous_owner, blockchain: data.blockchain, qr_code_url: data.qr_code_url, found: true });
       setSource('api');
     } else {
       const demo = DUMMY_RECORDS[tn];
@@ -477,6 +477,16 @@ export default function VerifyLand() {
                     <InfoRow label="Date of Acquisition" value={result.owner?.acquired_at || result.owner?.acquired_at} />
                   </Section>
 
+                  {/* Previous owner, if this land has been transferred */}
+                  {result.previous_owner && (
+                    <Section title="Previous Owner" icon="↩️">
+                      <InfoRow label="Full Legal Name" value={result.previous_owner.owner_name} />
+                      <InfoRow label="National ID" value={result.previous_owner.owner_national_id} mono />
+                      <InfoRow label="Contact" value={result.previous_owner.owner_contact} />
+                      <InfoRow label="Owned From" value={result.previous_owner.acquired_at} />
+                      <InfoRow label="Transferred On" value={result.previous_owner.transferred_at} />
+                    </Section>
+                  )}
                   {/* Land details */}
                   <Section title="Land Details" icon="📍">
                     <InfoRow label="Plot Number" value={result.plot_number} />
@@ -516,21 +526,21 @@ export default function VerifyLand() {
                     <InfoRow label="Court Orders" value="None on record" />
                   </Section>
 
-                 {/* QR code */}
+                  {/* QR code */}
                   {false && result.qr_code_url && (
-                  <Section title="QR Verification Code" icon="📱">
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <img
-                      src={result.qr_code_url.startsWith('http') ? result.qr_code_url : `${BACKEND_ORIGIN}${result.qr_code_url}`}
-                      alt="QR Code"
-                      style={{ width: 90, height: 90, background: '#fff', padding: 6, borderRadius: 8 }}
-                    />
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                      Scan to instantly re-verify this land title without typing the number.
-                    </span>
-                  </div>
-                </Section>
-              )}
+                    <Section title="QR Verification Code" icon="📱">
+                      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                     <img
+                        src={result.qr_code_url.startsWith('http') ? result.qr_code_url : `${BACKEND_ORIGIN}${result.qr_code_url}`}
+                        alt="QR Code"
+                        style={{ width: 90, height: 90, background: '#fff', padding: 6, borderRadius: 8 }}
+                      />
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                          Scan to instantly re-verify this land title without typing the number.
+                        </span>
+                      </div>
+                    </Section>
+                  )}
                 </div>
               </div>
 

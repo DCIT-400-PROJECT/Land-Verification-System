@@ -49,6 +49,7 @@ class LandVerificationService:
 
         # Blockchain integrity check
         integrity = BlockchainService.verify_chain(chain)
+        previous_ownership = chain[-2] if len(chain) > 1 else None
 
         result = {
             "found": True,
@@ -84,6 +85,13 @@ class LandVerificationService:
                 "owner_contact": current_ownership.owner_contact if current_ownership else None,
                 "acquired_at": str(current_ownership.acquired_at) if current_ownership else None,
             } if current_ownership else None,
+                "previous_owner": {
+                "owner_name": previous_ownership.owner_name,
+                "owner_national_id": previous_ownership.owner_national_id,
+                "owner_contact": previous_ownership.owner_contact,
+                "acquired_at": str(previous_ownership.acquired_at),
+                "transferred_at": str(previous_ownership.transferred_at) if previous_ownership.transferred_at else None,
+            } if previous_ownership else None,
             "blockchain": {
                 "chain_length": len(chain),
                 "integrity_valid": integrity["valid"],
