@@ -27,9 +27,12 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
+    "cloudinary_storage",
+    "cloudinary",
 ]
 LOCAL_APPS = ["accounts", "lands", "blockchain", "audit"]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -94,6 +97,31 @@ MEDIA_URL = config("MEDIA_URL", default="/media/")
 MEDIA_ROOT = BASE_DIR / config("MEDIA_ROOT", default="media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# ── Cloudinary (persistent media storage for QR codes) ─────────────────────
+# Render's free tier wipes the local filesystem on every redeploy/spin-down,
+# so QR code images saved to local disk disappear in production. Cloudinary
+# gives them a permanent URL instead.
+#
+# Locally, if these three vars are not set in .env, they default to "" and
+# Cloudinary is skipped entirely — QR codes just save to local disk as before,
+# so `manage.py runserver` still works with no Cloudinary account at all.
+#
+# In production (Render), set CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY /
+# CLOUDINARY_API_SECRET as real environment variables in the Render dashboard
+# (Environment tab) — once those are non-empty, storage switches to Cloudinary
+# automatically.
+CLOUDINARY_CLOUD_NAME = config("CLOUDINARY_CLOUD_NAME", default="")
+CLOUDINARY_API_KEY = config("CLOUDINARY_API_KEY", default="")
+CLOUDINARY_API_SECRET = config("CLOUDINARY_API_SECRET", default="")
+
+if CLOUDINARY_CLOUD_NAME:
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
+        "API_KEY": CLOUDINARY_API_KEY,
+        "API_SECRET": CLOUDINARY_API_SECRET,
+    }
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -153,5 +181,3 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
 FRONTEND_BASE_URL = config("FRONTEND_BASE_URL", default="http://localhost:3000")
-
-DEBUG = config("DEBUG", default=False, cast=bool)     # False in production

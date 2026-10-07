@@ -4,6 +4,8 @@ lands/serializers.py
 from rest_framework import serializers
 from .models import LandRecord, OwnershipRecord, TransferRequest, LandStatus
 from accounts.serializers import UserPublicSerializer
+from django.core.files.storage import default_storage
+
 
 
 class OwnershipRecordSerializer(serializers.ModelSerializer):
@@ -45,9 +47,7 @@ class LandRecordSerializer(serializers.ModelSerializer):
 
     def get_qr_code_url(self, obj):
         if obj.qr_code_path:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.qr_code_path}")
+            return default_storage.url(obj.qr_code_path)
         return None
 
 
@@ -121,7 +121,7 @@ class TransferRequestSerializer(serializers.ModelSerializer):
         model = TransferRequest
         fields = [
             "id", "land", "land_title",
-            "previous_owner_name", "previous_owner_national_id","new_owner_contact"
+            "previous_owner_name", "previous_owner_national_id","new_owner_contact",
             "new_owner_name", "new_owner_national_id", "new_owner_user",
             "reason", "status",
             "requested_by_details", "reviewed_by_details",

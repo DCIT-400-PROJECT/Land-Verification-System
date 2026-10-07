@@ -516,21 +516,21 @@ export default function VerifyLand() {
                     <InfoRow label="Court Orders" value="None on record" />
                   </Section>
 
-                  {/* QR code */}
-                  {result.qr_code_url && (
-                    <Section title="QR Verification Code" icon="📱">
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                     <img
-                        src={result.qr_code_url.startsWith('http') ? result.qr_code_url : `${BACKEND_ORIGIN}${result.qr_code_url}`}
-                        alt="QR Code"
-                        style={{ width: 90, height: 90, background: '#fff', padding: 6, borderRadius: 8 }}
-                      />
-                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                          Scan to instantly re-verify this land title without typing the number.
-                        </span>
-                      </div>
-                    </Section>
-                  )}
+                 {/* QR code */}
+                  {false && result.qr_code_url && (
+                  <Section title="QR Verification Code" icon="📱">
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <img
+                      src={result.qr_code_url.startsWith('http') ? result.qr_code_url : `${BACKEND_ORIGIN}${result.qr_code_url}`}
+                      alt="QR Code"
+                      style={{ width: 90, height: 90, background: '#fff', padding: 6, borderRadius: 8 }}
+                    />
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      Scan to instantly re-verify this land title without typing the number.
+                    </span>
+                  </div>
+                </Section>
+              )}
                 </div>
               </div>
 
