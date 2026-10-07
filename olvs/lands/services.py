@@ -14,8 +14,7 @@ from django.utils import timezone
 from .models import LandRecord, OwnershipRecord, LandStatus, TransferRequest
 from blockchain.service import BlockchainService
 from audit.models import AuditLog, AuditAction, AuditResult
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
+
 
 
 class LandVerificationService:
@@ -105,23 +104,26 @@ class LandVerificationService:
         )
         return result
 
-@staticmethod
-def _ensure_qr_code(land: LandRecord) -> str | None:
-    """Generate and save QR code if not already present. Returns its URL."""
-    if land.qr_code_path:
-        return default_storage.url(land.qr_code_path)
+   
+    @staticmethod
+    def _ensure_qr_code(land: LandRecord) -> str | None:
+        """Generate and save QR code if not already present. Returns media URL."""
+        if land.qr_code_path:
+            return f"{settings.MEDIA_URL}{land.qr_code_path}"
 
-    qr_content = f"{settings.FRONTEND_BASE_URL}/verify?title={land.title_number}"
-    img = qrcode.make(qr_content)
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    buf.seek(0)
+        qr_dir = os.path.join(settings.MEDIA_ROOT, "qr_codes")
+        os.makedirs(qr_dir, exist_ok=True)
 
-    filename = f"qr_codes/qr_{land.title_number.replace('/', '_')}.png"
-    saved_path = default_storage.save(filename, ContentFile(buf.read()))
+        # QR content must be an actual URL so scanning it opens the verify page directly
+        qr_content = f"{settings.FRONTEND_BASE_URL}/verify?title={land.title_number}"
+        img = qrcode.make(qr_content)
+        filename = f"qr_{land.title_number.replace('/', '_')}.png"
+        filepath = os.path.join(qr_dir, filename)
+        img.save(filepath)
 
-    LandRecord.objects.filter(pk=land.pk).update(qr_code_path=saved_path)
-    return default_storage.url(saved_path)
+        rel_path = f"qr_codes/{filename}"
+        LandRecord.objects.filter(pk=land.pk).update(qr_code_path=rel_path)
+        return f"{settings.MEDIA_URL}{rel_path}"
 
     @staticmethod
     def generate_certificate_pdf(land: LandRecord) -> BytesIO:
